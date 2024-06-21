@@ -12,6 +12,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(task_control_interface REQUIRED)
 
@@ -29,6 +30,7 @@ add_executable(task_control
 )
 ament_target_dependencies(task_control 
       rclcpp
+      rclcpp_action
       std_msgs
       task_control_interface
 )

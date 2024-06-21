@@ -3,14 +3,17 @@
 
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 #include "task_control_interface/msg/mcu_to_task.hpp"
 #include "task_control_interface/msg/task_to_mcu.hpp"
 #include "task_control_interface/msg/vision_result.hpp"
 #include "task_control_interface/msg/app_cmd.hpp"
+#include "task_control_interface/action/motion.hpp"
 
 namespace task_control {
 
 using namespace task_control_interface::msg;
+using namespace task_control_interface::action;
 
 class RobotCom {
 public:
@@ -31,6 +34,7 @@ private:
     rclcpp::Subscription<AppCmd>::SharedPtr app_cmd_subscriber_;
     rclcpp::Subscription<VisionResult>::SharedPtr vision_result_subscriber_;
     rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
+    rclcpp_action::Client<Motion>::SharedPtr motion_action_client_;
 };
 
 }  // namespace task_control

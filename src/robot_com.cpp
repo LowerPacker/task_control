@@ -10,6 +10,7 @@ RobotCom::RobotCom(const std::shared_ptr<rclcpp::Node>& nh) {
         std::bind(&RobotCom::app_cmd_callback, this, std::placeholders::_1));
     vision_result_subscriber_ = nh->create_subscription<VisionResult>("vision_result", 10,
         std::bind(&RobotCom::vision_result_callback, this, std::placeholders::_1));
+    motion_action_client_ = rclcpp_action::create_client<Motion>(nh, "motion_action");
 }
 
 }  // namespace task_control

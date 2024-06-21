@@ -3,7 +3,7 @@
 <package format="3">
   <name>task_control_interface</name>
   <version>0.0.0</version>
-  <description>task control common msg</description>
+  <description>task control common msg and action</description>
   <maintainer email="356670209@qq.com">yangzai</maintainer>
   <license>Apache-2.0</license>
 
@@ -13,7 +13,7 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>geometry_msgs</depend>
-  <!-- <depend>action_msgs</depend> -->
+  <depend>action_msgs</depend>
   
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
