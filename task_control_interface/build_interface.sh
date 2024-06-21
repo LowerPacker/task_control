@@ -1,4 +1,4 @@
-#!/bin/bash  
+#!/bin/bash
 
 CUR_DIR=$(pwd)
 INTERFACE_DIR=${CUR_DIR}

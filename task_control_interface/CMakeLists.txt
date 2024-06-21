@@ -14,10 +14,10 @@ find_package(rosidl_default_generators REQUIRED)
 
 # message(STATUS "当前目录是: ${CMAKE_CURRENT_SOURCE_DIR}")
 rosidl_generate_interfaces(${PROJECT_NAME}
-  msg/McuFeedback.msg
-  msg/McuInfo.msg
-  msg/MotionExcution.msg
-  msg/TaskControl.msg
+  msg/McuToTask.msg
+  msg/TaskToMcu.msg
+  msg/VisionResult.msg
+  # msg/Motion.action
   msg/AppCmd.msg
   # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
   DEPENDENCIES geometry_msgs

@@ -3,11 +3,14 @@
 
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
-#include "task_control_interface/msg/task_control.hpp"
-#include "task_control_interface/msg/mcu_info.hpp"
+#include "task_control_interface/msg/mcu_to_task.hpp"
+#include "task_control_interface/msg/task_to_mcu.hpp"
+#include "task_control_interface/msg/vision_result.hpp"
 #include "task_control_interface/msg/app_cmd.hpp"
 
 namespace task_control {
+
+using namespace task_control_interface::msg;
 
 class RobotCom {
 public:
@@ -17,15 +20,15 @@ public:
     RobotCom& operator=(const RobotCom&) = delete;
     RobotCom& operator=(const RobotCom&&) = delete;
     virtual ~RobotCom() {}
-    virtual void mcu_info_callback(const task_control_interface::msg::McuInfo::SharedPtr msg) = 0;
-    virtual void app_cmd_callback(const task_control_interface::msg::AppCmd::SharedPtr msg) = 0;
-    inline rclcpp::Publisher<task_control_interface::msg::TaskControl>::SharedPtr get_task_control_publisher() const {
-        return task_control_publisher_;
+    virtual void mcu_to_task_callback(const McuToTask::SharedPtr msg) = 0;
+    virtual void app_cmd_callback(const AppCmd::SharedPtr msg) = 0;
+    inline rclcpp::Publisher<TaskToMcu>::SharedPtr get_task_to_mcu_publisher() const {
+        return task_to_mcu_publisher_;
     }
 private:
-    rclcpp::Subscription<task_control_interface::msg::McuInfo>::SharedPtr mcu_info_subscriber_;
-    rclcpp::Subscription<task_control_interface::msg::AppCmd>::SharedPtr app_cmd_subscriber_;
-    rclcpp::Publisher<task_control_interface::msg::TaskControl>::SharedPtr task_control_publisher_;
+    rclcpp::Subscription<McuToTask>::SharedPtr mcu_to_task_subscriber_;
+    rclcpp::Subscription<AppCmd>::SharedPtr app_cmd_subscriber_;
+    rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
 };
 
 }  // namespace task_control

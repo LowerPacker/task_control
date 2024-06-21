@@ -58,16 +58,16 @@ public:
 
     void init(const std::shared_ptr<rclcpp::Node>& nh) override;
     bool do_normal() override;                                                                    			
-    bool start_work() override;
+    bool start_work(int brush_v_level) override;
     bool stop_work() override;
     bool stop_move() override;
     bool emr() override;
     bool emr_restore() override;
-    void mcu_info_callback(const task_control_interface::msg::McuInfo::SharedPtr msg) override;
-    void app_cmd_callback(const task_control_interface::msg::AppCmd::SharedPtr msg) override;
+    void mcu_to_task_callback(const McuToTask::SharedPtr msg) override;
+    void app_cmd_callback(const AppCmd::SharedPtr msg) override;
 
 private:
-    task_control_interface::msg::TaskControl task_control_msg_;
+    TaskToMcu task_to_mcu_msg_;
 	int robot_mode_ = E_ROBOT_MODE::MANUAL;
     int robot_state_ = E_ROBOT_STATE::STATE_IDEL;
     int task_ = E_ROBOT_TASK::TASK_NULL;

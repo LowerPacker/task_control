@@ -18,7 +18,7 @@ public:
     
     virtual void init(const std::shared_ptr<rclcpp::Node>& nh) = 0;
     virtual bool do_normal() = 0;                                                                  
-    virtual bool start_work() = 0;
+    virtual bool start_work(int brush_v_level) = 0;
     virtual bool stop_work() = 0;
     virtual bool stop_move() = 0;
     virtual bool emr() = 0;

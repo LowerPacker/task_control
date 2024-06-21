@@ -17,8 +17,8 @@ void Robot::init(const std::shared_ptr<rclcpp::Node>& nh) {
     });
     // 准备状态
     robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_READY, [this](FSM* f) {
-        start_work();
-        get_task_control_publisher()->publish(task_control_msg_);
+        start_work(2);
+        get_task_to_mcu_publisher()->publish(task_to_mcu_msg_);
         robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_WORK);
         return true;
     });
@@ -46,7 +46,7 @@ void Robot::init(const std::shared_ptr<rclcpp::Node>& nh) {
     robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_STOP, [this](FSM* f) {
         stop_work();
         stop_move();
-        get_task_control_publisher()->publish(task_control_msg_);
+        get_task_to_mcu_publisher()->publish(task_to_mcu_msg_);
         robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
         return true;
     });
@@ -63,15 +63,15 @@ bool Robot::do_normal() {
     return spin_once();
 }
 
-bool Robot::start_work() {
-    task_control_msg_.suction_cup = 1;      // 放吸盘
-    task_control_msg_.brush_v = 1000;       // 辊刷速度置为1000
+bool Robot::start_work(int brush_v_level) {
+    task_to_mcu_msg_.suction_cup = 1;      // 放吸盘
+    task_to_mcu_msg_.brush_v_level = brush_v_level;      
 	return true;
 }
 
 bool Robot::stop_work() {
-    task_control_msg_.suction_cup = 0;  // 不放吸盘
-    task_control_msg_.brush_v = 0;      // 辊刷速度置为0
+    task_to_mcu_msg_.suction_cup = 0;        // 不放吸盘
+    task_to_mcu_msg_.brush_v_level = 0;      // 辊刷速度置为0
 	return true;
 }
 
@@ -82,18 +82,18 @@ bool Robot::stop_move() {
 }
 
 bool Robot::emr() {
-    task_control_msg_.emergency_stop = 1;   // 急停
+    task_to_mcu_msg_.emergency_stop = 1;   // 急停
     stop_work();
     stop_move();
     return true;
 }
 
 bool Robot::emr_restore() {
-    task_control_msg_.emergency_stop = 0;   // 不急停
+    task_to_mcu_msg_.emergency_stop = 0;   // 不急停
     return true;
 }
 
-void Robot::app_cmd_callback(const task_control_interface::msg::AppCmd::SharedPtr msg) {
+void Robot::app_cmd_callback(const AppCmd::SharedPtr msg) {
     // 手自动切换
    if (robot_mode_ != msg->mode_cmd) {
         robot_mode_ = msg->mode_cmd;
@@ -114,10 +114,10 @@ void Robot::app_cmd_callback(const task_control_interface::msg::AppCmd::SharedPt
             emr_restore();
         }
    }
-    get_task_control_publisher()->publish(task_control_msg_);
+    get_task_to_mcu_publisher()->publish(task_to_mcu_msg_);
 }
 
-void Robot::mcu_info_callback(const task_control_interface::msg::McuInfo::SharedPtr msg) {
+void Robot::mcu_to_task_callback(const McuToTask::SharedPtr msg) {
 
 }
 
