@@ -22,12 +22,14 @@ public:
     virtual ~RobotCom() {}
     virtual void mcu_to_task_callback(const McuToTask::SharedPtr msg) = 0;
     virtual void app_cmd_callback(const AppCmd::SharedPtr msg) = 0;
+    virtual void vision_result_callback(const VisionResult::SharedPtr msg) = 0;
     inline rclcpp::Publisher<TaskToMcu>::SharedPtr get_task_to_mcu_publisher() const {
         return task_to_mcu_publisher_;
     }
 private:
     rclcpp::Subscription<McuToTask>::SharedPtr mcu_to_task_subscriber_;
     rclcpp::Subscription<AppCmd>::SharedPtr app_cmd_subscriber_;
+    rclcpp::Subscription<VisionResult>::SharedPtr vision_result_subscriber_;
     rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
 };
 

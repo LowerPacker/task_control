@@ -8,6 +8,8 @@ RobotCom::RobotCom(const std::shared_ptr<rclcpp::Node>& nh) {
         std::bind(&RobotCom::mcu_to_task_callback, this, std::placeholders::_1));
     app_cmd_subscriber_ = nh->create_subscription<AppCmd>("app_cmd", 10,
         std::bind(&RobotCom::app_cmd_callback, this, std::placeholders::_1));
+    vision_result_subscriber_ = nh->create_subscription<VisionResult>("vision_result", 10,
+        std::bind(&RobotCom::vision_result_callback, this, std::placeholders::_1));
 }
 
 }  // namespace task_control

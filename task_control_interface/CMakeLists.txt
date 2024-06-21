@@ -17,8 +17,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   msg/McuToTask.msg
   msg/TaskToMcu.msg
   msg/VisionResult.msg
-  # msg/Motion.action
   msg/AppCmd.msg
+  # msg/Motion.action
   # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
   DEPENDENCIES geometry_msgs
 )

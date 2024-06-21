@@ -65,6 +65,7 @@ public:
     bool emr_restore() override;
     void mcu_to_task_callback(const McuToTask::SharedPtr msg) override;
     void app_cmd_callback(const AppCmd::SharedPtr msg) override;
+    void vision_result_callback(const VisionResult::SharedPtr msg) override;
 
 private:
     TaskToMcu task_to_mcu_msg_;

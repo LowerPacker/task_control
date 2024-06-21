@@ -121,5 +121,8 @@ void Robot::mcu_to_task_callback(const McuToTask::SharedPtr msg) {
 
 }
 
+void Robot::vision_result_callback(const VisionResult::SharedPtr msg) {
+    
+}
 
 }  // namespace task_control
