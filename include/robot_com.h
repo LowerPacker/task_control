@@ -14,6 +14,8 @@ namespace task_control {
 
 using namespace task_control_interface::msg;
 using namespace task_control_interface::action;
+using Motion = task_control_interface::action::Motion;
+using GoalHandleMotion = rclcpp_action::ClientGoalHandle<Motion>;
 
 class RobotCom {
 public:
@@ -26,6 +28,10 @@ public:
     virtual void mcu_to_task_callback(const McuToTask::SharedPtr msg) = 0;
     virtual void app_cmd_callback(const AppCmd::SharedPtr msg) = 0;
     virtual void vision_result_callback(const VisionResult::SharedPtr msg) = 0;
+    void goal_response_callback(std::shared_future<GoalHandleMotion::SharedPtr> future);
+    void feedback_callback(GoalHandleMotion::SharedPtr, const std::shared_ptr<const Motion::Feedback> feedback);
+    void result_callback(const GoalHandleMotion::WrappedResult& result);
+    void send_goal();
     inline rclcpp::Publisher<TaskToMcu>::SharedPtr get_task_to_mcu_publisher() const {
         return task_to_mcu_publisher_;
     }
@@ -35,6 +41,8 @@ private:
     rclcpp::Subscription<VisionResult>::SharedPtr vision_result_subscriber_;
     rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
     rclcpp_action::Client<Motion>::SharedPtr motion_action_client_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    std::shared_ptr<rclcpp::Node> nh_;
 };
 
 }  // namespace task_control

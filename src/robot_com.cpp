@@ -1,8 +1,9 @@
+#include <chrono>
 #include "robot_com.h"
 
 namespace task_control {
 
-RobotCom::RobotCom(const std::shared_ptr<rclcpp::Node>& nh) {
+RobotCom::RobotCom(const std::shared_ptr<rclcpp::Node>& nh) : nh_(nh) {
     task_to_mcu_publisher_ = nh->create_publisher<TaskToMcu>("task_to_mcu", 10);
     mcu_to_task_subscriber_ = nh->create_subscription<McuToTask>("mcu_to_task", 10,
         std::bind(&RobotCom::mcu_to_task_callback, this, std::placeholders::_1));
@@ -11,6 +12,73 @@ RobotCom::RobotCom(const std::shared_ptr<rclcpp::Node>& nh) {
     vision_result_subscriber_ = nh->create_subscription<VisionResult>("vision_result", 10,
         std::bind(&RobotCom::vision_result_callback, this, std::placeholders::_1));
     motion_action_client_ = rclcpp_action::create_client<Motion>(nh, "motion_action");
+}
+
+void RobotCom::send_goal() {
+    // using namespace std::placeholders;
+
+    // this->timer_->cancel();
+
+    // this->goal_done_ = false;
+
+    // if (!this->motion_action_client_) {
+    //     RCLCPP_ERROR(nh_->get_logger(), "Action client not initialized");
+    // }
+
+    // if (!this->motion_action_client_->wait_for_action_server(std::chrono::seconds(10))) {
+    //     RCLCPP_ERROR(nh_->get_logger(), "Action server not available after waiting");
+    //     this->goal_done_ = true;
+    //     return;
+    // }
+
+    // auto goal_msg = Motion::Goal();
+    // goal_msg.order = 10;
+
+    RCLCPP_INFO(nh_->get_logger(), "Sending goal");
+
+    auto send_goal_options = rclcpp_action::Client<Motion>::SendGoalOptions();
+    send_goal_options.goal_response_callback =
+        std::bind(&RobotCom::goal_response_callback, this, std::placeholders::_1);
+    send_goal_options.feedback_callback =
+        std::bind(&RobotCom::feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
+    send_goal_options.result_callback =
+        std::bind(&RobotCom::result_callback, this, std::placeholders::_1);
+    // auto goal_handle_future = this->client_ptr_->async_send_goal(goal_msg, send_goal_options);
+}
+
+void RobotCom::goal_response_callback(std::shared_future<GoalHandleMotion::SharedPtr> future) {
+    auto goal_handle = future.get();
+    if (!goal_handle) {
+      RCLCPP_ERROR(nh_->get_logger(), "Goal was rejected by server");
+    } else {
+      RCLCPP_INFO(nh_->get_logger(), "Goal accepted by server, waiting for result");
+    }
+}
+
+void RobotCom::feedback_callback(GoalHandleMotion::SharedPtr, const std::shared_ptr<const Motion::Feedback> feedback)  {
+    // RCLCPP_INFO(nh_->get_logger(), "Next number in sequence received: %", feedback->sequence.back());
+}
+
+void RobotCom::result_callback(const GoalHandleMotion::WrappedResult& result) {
+    // this->goal_done_ = true;
+    switch (result.code) {
+      case rclcpp_action::ResultCode::SUCCEEDED:
+        break;
+      case rclcpp_action::ResultCode::ABORTED:
+        RCLCPP_ERROR(nh_->get_logger(), "Goal was aborted");
+        return;
+      case rclcpp_action::ResultCode::CANCELED:
+        RCLCPP_ERROR(nh_->get_logger(), "Goal was canceled");
+        return;
+      default:
+        RCLCPP_ERROR(nh_->get_logger(), "Unknown result code");
+        return;
+    }
+
+    RCLCPP_INFO(nh_->get_logger(), "Result received");
+    // for (auto number : result.result->sequence) {
+    //   RCLCPP_INFO(nh_->get_logger(), "%", number);
+    // }
 }
 
 }  // namespace task_control
