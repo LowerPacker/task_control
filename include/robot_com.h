@@ -14,7 +14,6 @@ namespace task_control {
 
 using namespace task_control_interface::msg;
 using namespace task_control_interface::action;
-using Motion = task_control_interface::action::Motion;
 using GoalHandleMotion = rclcpp_action::ClientGoalHandle<Motion>;
 
 class RobotCom {
