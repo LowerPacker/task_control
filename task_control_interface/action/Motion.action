@@ -4,8 +4,8 @@ float64  start_atti_yaw
 float64  aim_pose_x   # 终点(若自旋，yaw带上角度；否则为0)
 float64  aim_pose_y
 float64  aim_atti_yaw # 逆时针为正
-float64  linear_vel_max   # 线速度
-float64  angular_rate_max # 角速度
+float64  linear_vel_max   # 线速度 m/s
+float64  angular_rate_max # 角速度 rad/s
 int32 task_mode	# 任务类型0--spin,1--前进,2--后退
 int32 need_stop # 是否需要主动停车,1-ok,0-not
 ---

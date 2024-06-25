@@ -63,15 +63,28 @@ public:
     bool stop_move() override;
     bool emr() override;
     bool emr_restore() override;
+    void mcu_to_motion_callback(const McuToMotion::SharedPtr msg) override;
     void mcu_to_task_callback(const McuToTask::SharedPtr msg) override;
+    void motion_to_mcu_callback(const MotionToMcu::SharedPtr msg) override;
     void app_cmd_callback(const AppCmd::SharedPtr msg) override;
     void vision_result_callback(const VisionResult::SharedPtr msg) override;
 
 private:
     TaskToMcu task_to_mcu_msg_;
+
+    //回调数据
+    McuToMotion::SharedPtr  m_mcu_to_motion_msg_;
+    McuToTask::SharedPtr    m_mcu_to_task_msg_;
+    MotionToMcu::SharedPtr  m_motion_to_mcu_msg_;
+    VisionResult::SharedPtr m_vision_result_msg_;
+
 	int robot_mode_ = E_ROBOT_MODE::MANUAL;
     int robot_state_ = E_ROBOT_STATE::STATE_IDEL;
     int task_ = E_ROBOT_TASK::TASK_NULL;
+
+    bool m_isPause = false;
+    bool m_isResume = false;
+    bool m_isStop = false;
 };
 
 }  // namespace task_control

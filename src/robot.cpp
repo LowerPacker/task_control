@@ -5,6 +5,11 @@ namespace task_control {
 
 Robot::Robot(const std::shared_ptr<rclcpp::Node>& nh) : RobotBase(nh), RobotCom(nh) {
     init(nh);
+
+    m_mcu_to_motion_msg_ = std::make_shared<McuToMotion>();
+    m_mcu_to_task_msg_ = std::make_shared<McuToTask>();
+    m_motion_to_mcu_msg_ = std::make_shared<MotionToMcu>();
+    m_vision_result_msg_ = std::make_shared<VisionResult>();
 }
 
 void Robot::init(const std::shared_ptr<rclcpp::Node>& nh) {
@@ -117,12 +122,27 @@ void Robot::app_cmd_callback(const AppCmd::SharedPtr msg) {
     get_task_to_mcu_publisher()->publish(task_to_mcu_msg_);
 }
 
-void Robot::mcu_to_task_callback(const McuToTask::SharedPtr msg) {
-
+void Robot::mcu_to_motion_callback(const McuToMotion::SharedPtr msg)
+{
+    // std::cout << "-------mcu_to_motion_callback!-----------" << std::endl;
+    m_mcu_to_motion_msg_ = msg;
 }
 
-void Robot::vision_result_callback(const VisionResult::SharedPtr msg) {
+void Robot::mcu_to_task_callback(const McuToTask::SharedPtr msg) 
+{
+    m_mcu_to_task_msg_ = msg;
+}
+
+void Robot::motion_to_mcu_callback(const MotionToMcu::SharedPtr msg)
+{
+    // std::cout << "-------motion_to_mcu_callback!-----------" << std::endl;
+    m_motion_to_mcu_msg_ = msg;
+}
+
+void Robot::vision_result_callback(const VisionResult::SharedPtr msg) 
+{
     
 }
+
 
 }  // namespace task_control

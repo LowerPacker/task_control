@@ -14,7 +14,9 @@ find_package(rosidl_default_generators REQUIRED)
 
 # message(STATUS "当前目录是: ${CMAKE_CURRENT_SOURCE_DIR}")
 rosidl_generate_interfaces(${PROJECT_NAME}
+  msg/McuToMotion.msg
   msg/McuToTask.msg
+  msg/MotionToMcu.msg
   msg/TaskToMcu.msg
   msg/VisionResult.msg
   msg/AppCmd.msg
