@@ -13,6 +13,17 @@
 #include "task_control_interface/action/motion.hpp"
 
 namespace task_control {
+    
+enum E_MOVE_RESULT
+{
+    MOVE_RESULT_UNKNOWN = 0,// 初始状态
+    MOVE_RESULT_SUCCESS,    // 成功
+    MOVE_RESULT_RUNNING,    // 执行中
+    MOVE_RESULT_ABORTED,    // 中断
+    MOVE_RESULT_FAIL,       // 失败
+    MOVE_RESULT_REJECT,     // 拒绝
+    MOVE_RESULT_ERROR,      // 未知错误
+};
 
 using namespace task_control_interface::msg;
 using namespace task_control_interface::action;
@@ -36,12 +47,16 @@ public:
     void goal_response_callback(std::shared_future<GoalHandleMotion::SharedPtr> future);
     void feedback_callback(GoalHandleMotion::SharedPtr, const std::shared_ptr<const Motion::Feedback> feedback);
     void result_callback(const GoalHandleMotion::WrappedResult& result);
-    void send_goal();
+    
+    void send_goal(int task_mode, float aim_x, float aim_y, float aim_yaw);
 
     inline rclcpp::Publisher<TaskToMcu>::SharedPtr get_task_to_mcu_publisher() const {
         return task_to_mcu_publisher_;
     }
 
+    int get_move_result();
+    
+    std::shared_ptr<rclcpp::Node> nh_;
 private:
     rclcpp::Subscription<McuToTask>::SharedPtr mcu_to_task_subscriber_;
     rclcpp::Subscription<AppCmd>::SharedPtr app_cmd_subscriber_;
@@ -51,7 +66,8 @@ private:
     rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
     rclcpp_action::Client<Motion>::SharedPtr motion_action_client_;
     rclcpp::TimerBase::SharedPtr timer_;
-    std::shared_ptr<rclcpp::Node> nh_;
+
+    int m_move_result;
 };
 
 }  // namespace task_control

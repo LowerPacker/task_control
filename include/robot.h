@@ -10,6 +10,20 @@
 
 namespace task_control {
 
+enum E_ROBOT_POS
+{
+    POS_UNKNOWN = 0,    // 未知
+    POS_LEFT,           // 左边
+    POS_RIGHT,          // 右边
+};
+
+enum E_ROBOT_MOVE
+{
+    MOVE_SPIN = 0,    // 旋转
+    MOVE_ADVANCE,     // 前进
+    MOVE_RECOIL,      // 后退
+};
+
 enum E_ROBOT_MODE
 {
     MANUAL = 1,
@@ -45,6 +59,22 @@ enum E_FSM_STATE
     FSM_STATE_CONTINUE,		    // 继续
     FSM_STATE_STOP,             // 停止
     FSM_STATE_FINISH,	        // 结束
+
+    FSM_STATE_CHECK_MOTOR,                  // 检查电机运行状态
+    FSM_STATE_FIRST_MOVE,                   // 第一次移动
+    FSM_STATE_FIRST_MOVE_WAIT_RESULT,       // 第一次移动等待结果
+    FSM_STATE_FIRST_RECOIL,                 // 第一次后退
+    FSM_STATE_FIRST_RECOIL_WAIT_RESULT,     // 第一次后退等待结果
+    FSM_STATE_FIRST_SPIN,                   // 第一次旋转
+    FSM_STATE_FIRST_SPIN_WAIT_RESULT,       // 第一次旋转等待结果
+    FSM_STATE_ADVANCE,                      // 一直前进
+    FSM_STATE_ADVANCE_WAIT_RESULT,          // 一直前进等待结果
+    FSM_STATE_ADVANCE_FIXED,                // 前进固定距离
+    FSM_STATE_ADVANCE_FIXED_WAIT_RESULT,    // 前进固定距离等待结果
+    FSM_STATE_RECOIL_FIXED,                 // 后退固定距离
+    FSM_STATE_RECOIL_FIXED_WAIT_RESULT,     // 后退固定距离等待结果
+    FSM_STATE_SPIN,                         // 旋转
+    FSM_STATE_SPIN_WAIT_RESULT,             // 旋转等待结果
 };
 
 class Robot final : public RobotBase, public RobotCom {
@@ -69,7 +99,14 @@ public:
     void app_cmd_callback(const AppCmd::SharedPtr msg) override;
     void vision_result_callback(const VisionResult::SharedPtr msg) override;
 
+    bool get_emer_stop_status()     { return m_mcu_to_task_msg_->emergency_stop_status; }
+    bool get_suction_cup_status()   { return m_mcu_to_task_msg_->suction_cup_status; }
+    bool get_motor_status()         { return m_mcu_to_task_msg_->motor_status; }
+    bool get_brush_status()         { return m_mcu_to_task_msg_->brush_status; }
+    bool get_drop_sign()            { return m_mcu_to_task_msg_->drop_sign; }
 private:
+    void set_robot_move(int task_mode, float aim_x = 0, float aim_y = 0, float aim_yaw = 0);
+
     TaskToMcu task_to_mcu_msg_;
 
     //回调数据
@@ -85,6 +122,10 @@ private:
     bool m_isPause = false;
     bool m_isResume = false;
     bool m_isStop = false;
+
+    //状态机相关
+    int m_robot_pos;
+    int m_spin_cnt;
 };
 
 }  // namespace task_control

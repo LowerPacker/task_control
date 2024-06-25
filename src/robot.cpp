@@ -3,6 +3,10 @@
 
 namespace task_control {
 
+#define PI 3.1415926535
+#define D_ADVANCE_VALUE 0.5
+#define D_RECOIL_VALUE 0.5
+
 Robot::Robot(const std::shared_ptr<rclcpp::Node>& nh) : RobotBase(nh), RobotCom(nh) {
     init(nh);
 
@@ -22,9 +26,13 @@ void Robot::init(const std::shared_ptr<rclcpp::Node>& nh) {
     });
     // 准备状态
     robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_READY, [this](FSM* f) {
+
+        m_robot_pos = POS_LEFT;
+        m_spin_cnt = 0;
+        
         start_work(2);
         get_task_to_mcu_publisher()->publish(task_to_mcu_msg_);
-        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_WORK);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_CHECK_MOTOR);
         return true;
     });
     // 作业状态
@@ -58,6 +66,293 @@ void Robot::init(const std::shared_ptr<rclcpp::Node>& nh) {
     // 结束状态
     robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FINISH, [this](FSM* f) {
         robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_IDEL);
+        return true;
+    });
+    
+    // 检测电机运行状态
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_CHECK_MOTOR, [this](FSM* f) {
+        
+        //电机异常
+        if(get_motor_status() || get_brush_status() || get_drop_sign())
+        {
+            //机器异常
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_STOP);
+        }
+        else
+        {
+            //机器正常，开始工作
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_MOVE", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_MOVE);
+        }
+        return true;
+    });
+    
+    // 第一次往前走
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_MOVE, [this](FSM* f) {
+        
+        //下发一直往前走
+        set_robot_move(MOVE_ADVANCE);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_MOVE_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_MOVE_WAIT_RESULT);
+        return true;
+    });
+    
+    // 第一次往前走等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_MOVE_WAIT_RESULT, [this](FSM* f) {
+        
+        //监测跌落标志，触发则取消运控任务并跳到下一个状态
+        if(get_drop_sign())
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_RECOIL", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL);
+        }
+
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 第一次后退
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL, [this](FSM* f) {
+        
+        //
+        set_robot_move(MOVE_RECOIL, D_RECOIL_VALUE);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_RECOIL_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL_WAIT_RESULT);
+        return true;
+    });
+    
+    // 第一次后退等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL_WAIT_RESULT, [this](FSM* f) {
+        
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_SUCCESS) //成功
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_SPIN", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_SPIN);
+        }
+        else if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 第一次旋转
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_SPIN, [this](FSM* f) {
+        
+        //
+        set_robot_move(MOVE_SPIN, 0, 0, (-1)*PI/2);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FIRST_RECOIL_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL_WAIT_RESULT);
+        return true;
+    });
+    
+    // 第一次旋转等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_FIRST_RECOIL_WAIT_RESULT, [this](FSM* f) {
+        
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_SUCCESS) //成功
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_ADVANCE", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_ADVANCE);
+        }
+        else if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 一直前进
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_ADVANCE, [this](FSM* f) {
+        
+        //
+        set_robot_move(MOVE_ADVANCE);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_ADVANCE_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_ADVANCE_WAIT_RESULT);
+        return true;
+    });
+    
+    // 一直前进等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_ADVANCE_WAIT_RESULT, [this](FSM* f) {
+        
+        //监测跌落标志，触发则取消运控任务并跳到下一个状态
+        if(get_drop_sign())
+        {
+            //更新机器在光伏板上的位置
+            m_robot_pos = (m_robot_pos == POS_LEFT ? POS_RIGHT : POS_LEFT);
+            
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_RECOIL_FIXED", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_RECOIL_FIXED);
+        }
+
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 前进固定距离
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_ADVANCE_FIXED, [this](FSM* f) {
+        
+        //
+        set_robot_move(MOVE_RECOIL, D_RECOIL_VALUE);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_ADVANCE_FIXED_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_ADVANCE_FIXED_WAIT_RESULT);
+        return true;
+    });
+    
+    // 前进固定距离等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_ADVANCE_FIXED_WAIT_RESULT, [this](FSM* f) {
+        
+        //跌落标志触发
+        if(get_drop_sign())
+        {
+            //取消运控任务
+
+
+            // if() //行走距离小于某个值，任务完成
+            // {
+            //     robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+            // }
+            // else //完成最后一行
+            // {
+            //     robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_RECOIL_FIXED);
+            // }
+        }
+
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_SUCCESS) //成功
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_SPIN", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_SPIN);
+        }
+        else if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 后退固定距离
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_RECOIL_FIXED, [this](FSM* f) {
+        
+        //
+        set_robot_move(MOVE_RECOIL, D_RECOIL_VALUE);
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_RECOIL_FIXED_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_RECOIL_FIXED_WAIT_RESULT);
+        return true;
+    });
+    
+    // 后退固定距离等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_RECOIL_FIXED_WAIT_RESULT, [this](FSM* f) {
+        
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_SUCCESS) //成功
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_SPIN", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_SPIN);
+        }
+        else if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
+        return true;
+    });
+    
+    // 旋转
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_SPIN, [this](FSM* f) {
+        
+        float spin_angle = 0;
+        if(m_robot_pos == POS_LEFT) //机器在左边，逆时针旋转
+        {
+            spin_angle = PI / 2;
+        }
+        else //机器在右边，顺时针旋转
+        {
+            spin_angle = (-1) * PI / 2;
+        }
+
+        if(spin_angle != 0)
+        {
+            set_robot_move(MOVE_SPIN, 0, 0, spin_angle);
+        }
+
+        RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_SPIN_WAIT_RESULT", __LINE__);
+        robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_SPIN_WAIT_RESULT);
+        return true;
+    });
+    
+    // 旋转等待结果
+    robot_fsm_.add_state(E_FSM_STATE::FSM_STATE_SPIN_WAIT_RESULT, [this](FSM* f) {
+        
+        auto result = get_move_result();
+        if(result == MOVE_RESULT_SUCCESS) //成功
+        {
+            if(++m_spin_cnt == 1) //第一次旋转，换行，走固定距离
+            {
+                RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_ADVANCE_FIXED", __LINE__);
+                robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_ADVANCE_FIXED);
+            }
+            else if(++m_spin_cnt == 2) //第二次旋转，开始一直往前走
+            {
+                RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_ADVANCE", __LINE__);
+                robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_ADVANCE);
+                m_spin_cnt = 0;
+            }
+        }
+        else if(result == MOVE_RESULT_RUNNING) //执行中
+        {
+
+        }
+        else //异常
+        {
+            RCLCPP_INFO(nh_->get_logger(), "line: %d goto_state FSM_STATE_FINISH", __LINE__);
+            robot_fsm_.goto_state(E_FSM_STATE::FSM_STATE_FINISH);
+        }
+
         return true;
     });
 
@@ -142,6 +437,12 @@ void Robot::motion_to_mcu_callback(const MotionToMcu::SharedPtr msg)
 void Robot::vision_result_callback(const VisionResult::SharedPtr msg) 
 {
     
+}
+
+// task_mode: 0--spin 1--advance 2--recoil
+void Robot::set_robot_move(int task_mode, float aim_x, float aim_y, float aim_yaw)
+{
+    send_goal(task_mode, aim_x, aim_y, aim_yaw);
 }
 
 
