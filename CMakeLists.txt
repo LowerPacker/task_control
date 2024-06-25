@@ -35,8 +35,16 @@ ament_target_dependencies(task_control
       task_control_interface
 )
 
+add_executable(app_simulator test/src/main.cpp)
+ament_target_dependencies(app_simulator 
+      rclcpp
+      std_msgs
+      task_control_interface
+)
+
 install(TARGETS
   task_control
+  app_simulator
   DESTINATION lib/${PROJECT_NAME}
 )
 
