@@ -49,6 +49,7 @@ public:
     void result_callback(const GoalHandleMotion::WrappedResult& result);
     
     void send_goal(int task_mode, float aim_x, float aim_y, float aim_yaw);
+    void cancel_goal();
 
     inline rclcpp::Publisher<TaskToMcu>::SharedPtr get_task_to_mcu_publisher() const {
         return task_to_mcu_publisher_;
@@ -66,6 +67,7 @@ private:
     rclcpp::Publisher<TaskToMcu>::SharedPtr task_to_mcu_publisher_;
     rclcpp_action::Client<Motion>::SharedPtr motion_action_client_;
     rclcpp::TimerBase::SharedPtr timer_;
+    GoalHandleMotion::SharedPtr handle_cancel_response_;
 
     int m_move_result;
 };

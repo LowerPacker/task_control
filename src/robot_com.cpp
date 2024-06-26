@@ -76,8 +76,33 @@ void RobotCom::send_goal(int task_mode, float aim_x, float aim_y, float aim_yaw)
     send_goal_options.result_callback =
         std::bind(&RobotCom::result_callback, this, std::placeholders::_1);
     auto goal_handle_future = this->motion_action_client_->async_send_goal(goal_msg, send_goal_options);
+    handle_cancel_response_ = goal_handle_future.get();
 
-    m_move_result = MOVE_RESULT_RUNNING;
+    m_move_result = MOVE_RESULT_UNKNOWN;
+}
+
+void RobotCom::cancel_goal()
+{
+    // auto handle_cancel_response = [this](std::shared_future<GoalHandleMotion::WrappedResult> future)
+    // {
+    //     auto result = future.get();
+    //     if (result) 
+    //     {
+    //         RCLCPP_INFO(nh_->get_logger(), "Cancel request sent successfully");
+    //     } else 
+    //     {
+    //         RCLCPP_ERROR(nh_->get_logger(), "Failed to send cancel request");
+    //     }
+    // };
+    // auto handle_cancel_response = GoalHandleMotion::SharedPtr();
+
+    // 发送取消请求
+    // motion_action_client_->async_cancel_goal(handle_cancel_response);
+    if(handle_cancel_response_ != NULL)
+    {
+        motion_action_client_->async_cancel_goal(handle_cancel_response_);
+        m_move_result = MOVE_RESULT_UNKNOWN;
+    }
 }
 
 void RobotCom::goal_response_callback(std::shared_future<GoalHandleMotion::SharedPtr> future) {

@@ -10,6 +10,17 @@
 
 namespace task_control {
 
+enum E_ROBOT_FAULT_LEVEL
+{
+    FAULT_LEVEL_UNKNOWN = 0,  // 未知
+    FAULT_LEVEL_ERROR_1,    // 
+    FAULT_LEVEL_ERROR_2,    // 
+    FAULT_LEVEL_WARNN_1,    // 
+    FAULT_LEVEL_WARNN_2,    // 
+    FAULT_LEVEL_NORMA_1,    // 
+    FAULT_LEVEL_NORMA_2,    // 
+};
+
 enum E_ROBOT_POS
 {
     POS_UNKNOWN = 0,    // 未知
@@ -104,10 +115,21 @@ public:
     bool get_motor_status()         { return m_mcu_to_task_msg_->motor_status; }
     bool get_brush_status()         { return m_mcu_to_task_msg_->brush_status; }
     bool get_drop_sign()            { return m_mcu_to_task_msg_->drop_sign; }
+    int  get_exception_code()       { return m_mcu_to_task_msg_->exception_code; }
+    int  get_bat_vol()              { return m_mcu_to_task_msg_->bat_vol; }
+
+    void deal_update_task_msg();
+    void deal_emer_event();
+    void deal_fault_event();
+    void deal_auto_work_cmd();
+
+    bool is_fsm_running();
+
 private:
     void set_robot_move(int task_mode, float aim_x = 0, float aim_y = 0, float aim_yaw = 0);
 
     TaskToMcu task_to_mcu_msg_;
+    TaskToMcu task_to_mcu_msg_buf_;
 
     //回调数据
     McuToMotion::SharedPtr  m_mcu_to_motion_msg_;
@@ -126,6 +148,11 @@ private:
     //状态机相关
     int m_robot_pos;
     int m_spin_cnt;
+
+    int m_emer_cnt;
+    bool m_emer_flag = false;
+    E_ROBOT_FAULT_LEVEL m_fault_level;
+
 };
 
 }  // namespace task_control
